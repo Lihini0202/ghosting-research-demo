@@ -63,7 +63,7 @@ Model Handling: Due to GitHub file size limits, the heavy Machine Learning model
 Auto-Download: When the app launches, it automatically downloads the model from a secure Google Drive link (configured in app.py).
 
 # 💻 Streamlit Live Demo Link
-https://vtuwnzyqpnvq4m86hdm3oa.streamlit.app/
+[https://vtuwnzyqpnvq4m86hdm3oa.streamlit.app/](https://vtuwnzyqpnvq4m86hdm3oa.streamlit.app/)
 
 # 📂 File Structure
 app.py - The main Streamlit application code.
