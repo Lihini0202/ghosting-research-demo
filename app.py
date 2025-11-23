@@ -9,7 +9,7 @@ import os
 import gdown
 
 # -----------------------------------------------
-# Ghosting Research — Modern Streamlit Dashboard (Small Visuals)
+# Ghosting Research — Modern Streamlit Dashboard (Fixed Formatting)
 # -----------------------------------------------
 
 # --- PAGE CONFIG ---
@@ -132,18 +132,21 @@ with tabs[1]:
     with c1:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.markdown('<div class="metric-label">Accuracy</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="metric-value">{pct(metrics["Accuracy"])}</div>', unsafe_allow_html=True)
+        display_val = pct(metrics["Accuracy"])
+        st.markdown(f'<div class="metric-value">{display_val}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
 
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.markdown('<div class="metric-label">AUC</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="metric-value">{metrics["AUC"]:.4f}</div>', unsafe_allow_html=True)
+        display_val = f"{metrics['AUC']:.4f}"
+        st.markdown(f'<div class="metric-value">{display_val}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c2:
-        df_metrics = pd.DataFrame({'Metric':['Accuracy','Precision','Recall','F1','AUC'],'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]})
+        df_metrics = pd.DataFrame({'Metric':['Accuracy','Precision','Recall','F1','AUC'],
+                                   'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]})
         fig_bar = px.bar(df_metrics, x='Metric', y='Score', color='Score', color_continuous_scale='Viridis', text_auto='.2%')
         fig_bar.update_layout(yaxis_range=[0,1.05], height=300, margin=dict(l=30,r=20,t=30,b=20))
         st.plotly_chart(fig_bar, use_container_width=True)
@@ -168,9 +171,12 @@ with tabs[2]:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-label">{label}</div>', unsafe_allow_html=True)
             val = metrics[key]
-            st.markdown(f'<div class="metric-value">{pct(val) if label!="AUC" else val:.4f}</div>', unsafe_allow_html=True)
+            display_val = f"{val:.4f}" if label=="AUC" else pct(val)
+            st.markdown(f'<div class="metric-value">{display_val}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-    df_metrics = pd.DataFrame({'Metric':['Accuracy','Precision','Recall','F1','AUC'],'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]})
+
+    df_metrics = pd.DataFrame({'Metric':['Accuracy','Precision','Recall','F1','AUC'],
+                               'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]})
     fig_line = px.line(df_metrics, x='Metric', y='Score', markers=True)
     fig_line.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20), yaxis_range=[0,1.05])
     st.plotly_chart(fig_line, use_container_width=True)
@@ -185,7 +191,8 @@ with tabs[3]:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-label">{label}</div>', unsafe_allow_html=True)
             val = metrics[key]
-            st.markdown(f'<div class="metric-value">{pct(val) if label!="AUC" else val:.4f}</div>', unsafe_allow_html=True)
+            display_val = f"{val:.4f}" if label=="AUC" else pct(val)
+            st.markdown(f'<div class="metric-value">{display_val}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
     st.subheader('ROC Curve')
