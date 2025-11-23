@@ -8,316 +8,339 @@ import plotly.graph_objects as go
 import os
 import gdown
 
-# ==========================================
-# 1. PAGE CONFIGURATION & MODERN CSS
-# ==========================================
-st.set_page_config(
-    page_title="GhostGuard AI Research",
-    layout="wide",
-    initial_sidebar_state="expanded",
-    page_icon="👻"
-)
+# -----------------------------------------------
+# Ghosting Research — Modern Streamlit Dashboard
+# Single-file app: Ghosting_Dashboard_Modern.py
+# -----------------------------------------------
 
-# Custom CSS for a "Dashboard" look
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Ghosting Research — Modern Dashboard", layout="wide", initial_sidebar_state="collapsed")
+
+# --- STYLES (Modern Purple Theme + Card Design) ---
 st.markdown("""
 <style>
-    /* Global Background */
-    .stApp {
-        background-color: #f8f9fa;
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
+
+    /* Page background */
+    .reportview-container, .main, .block-container { background-color: #f7f7fb; }
+
+    /* Header */
+    .main-header {
+        background: linear-gradient(135deg, #5a00d4 0%, #b47bff 100%);
+        padding: 28px 22px;
+        border-radius: 18px;
+        color: white;
+        box-shadow: 0 12px 30px rgba(90,0,212,0.16);
+        margin-bottom: 18px;
+        text-align: center;
     }
-    
-    /* Custom Card Container */
-    .dashboard-card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-        border: 1px solid #eef2f6;
-    }
-    
-    /* Metrics Styling */
-    .metric-label {
-        font-size: 14px;
-        color: #64748b;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .metric-value {
-        font-size: 32px;
-        font-weight: 700;
-        color: #1e293b;
-    }
-    .metric-delta {
-        font-size: 14px;
-        color: #10b981; /* Green */
-        font-weight: 600;
-    }
-    
-    /* Tab Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #4c1d95 !important;
-        color: white !important;
-    }
-    
-    /* Headings */
-    h1, h2, h3 {
-        font-family: 'Inter', sans-serif;
-        color: #1e293b;
-    }
+    .main-header h1 { margin: 0; font-weight: 700; font-size: 26px; }
+    .main-header p { margin: 4px 0 0; opacity: 0.92; }
+
+    /* Metric Card */
+    .metric-card { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); border: 1px solid #f0edf8; }
+    .metric-label { color: #6b6b80; font-weight: 600; font-size: 0.85rem; }
+    .metric-value { font-size: 1.9rem; font-weight: 700; color: #272343; margin-top: 6px; }
+
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs button { border-radius: 12px !important; padding: 8px 16px !important; }
+    .stTabs button[aria-selected="true"] { background: linear-gradient(90deg,#6b21a8,#8b5cf6) !important; color: white !important; }
+
+    /* Small utility */
+    .muted { color: #7b7b93; font-size: 0.9rem; }
+
+    /* Sidebar */
+    .streamlit-expanderHeader { font-weight: 600; }
+
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 2. DATA LOADING
-# ==========================================
+# --- HEADER ---
+st.markdown('<div class="main-header"><h1>👻 Ghosting Prediction Research</h1><p class="muted">Behavioral analysis • ML evaluation • Interactive simulator</p></div>', unsafe_allow_html=True)
+
+# --- ASSET LOADING ---
 @st.cache_resource
 def load_assets():
-    # 1. Download Model from Drive if missing
-    file_id = '1gAogfnZDcpuSOTLa0UTD4tvXM0Vk0Jp2' # drive id
+    # Adjust file IDs / paths as needed. This function will attempt to load:
+    # - model_performance.json
+    # - model pickle (ghosting_risk_model.pkl)
+    # - model_columns.pkl
+    # - scaler.pkl
+    file_id = '1gAogfnZDcpuSOTLa0UTD4tvXM0Vk0Jp2'  # set if you want gdown fallback
     model_filename = 'ghosting_risk_model.pkl'
-    
-    if not os.path.exists(model_filename):
-        url = f'https://drive.google.com/uc?id={file_id}'
+
+    # try download model if missing (non-fatal)
+    if not os.path.exists(model_filename) and file_id:
         try:
-            gdown.download(url, model_filename, quiet=False)
-        except: pass 
+            url = f'https://drive.google.com/uc?id={file_id}'
+            gdown.download(url, model_filename, quiet=True)
+        except Exception:
+            pass
+
+    perf_data = None
+    model, columns, scaler = None, None, None
+    try:
+        if os.path.exists('model_performance.json'):
+            with open('model_performance.json', 'r') as f:
+                perf_data = json.load(f)
+    except Exception:
+        perf_data = None
 
     try:
-        with open('model_performance.json', 'r') as f:
-            perf_data = json.load(f)
-        
         if os.path.exists(model_filename):
             model = joblib.load(model_filename)
+        if os.path.exists('model_columns.pkl'):
             columns = joblib.load('model_columns.pkl')
+        if os.path.exists('scaler.pkl'):
             scaler = joblib.load('scaler.pkl')
-        else:
-            model, columns, scaler = None, None, None
-            
-        return perf_data, model, columns, scaler
-    except FileNotFoundError:
-        return None, None, None, None
+    except Exception:
+        model, columns, scaler = None, None, None
+
+    return perf_data, model, columns, scaler
 
 perf_data, model, model_columns, scaler = load_assets()
 
+# If perf_data missing, provide a safe fallback so layout still shows
 if not perf_data:
-    st.error("⚠️ Data files missing. Please check your GitHub repository.")
-    st.stop()
+    st.warning("Model performance file not found. The app will show demo metrics and visuals. Add 'model_performance.json' for full data.")
+    perf_data = {}
 
-# --- Hardcoded Ranking Data (From your notebook) ---
+# --- SAMPLE/DEFAULT METRICS (fallback) ---
 all_models_data = {
-    "Random Forest": 0.9352,
-    "Ensemble": 0.9337,
-    "Gradient Boosting": 0.9319,
-    "Logistic Regression": 0.8953,
-    "Naive Bayes": 0.7692,
-    "SVM": 0.5000,
-    "K-NN": 0.4871,
+    "Random Forest": {"Accuracy": 0.9352, "Precision": 0.89, "Recall": 0.87, "F1": 0.88, "AUC": 0.9352},
+    "Ensemble": {"Accuracy": 0.9337, "Precision": 0.89, "Recall": 0.86, "F1": 0.87, "AUC": 0.9337},
+    "Gradient Boosting": {"Accuracy": 0.9319, "Precision": 0.89, "Recall": 0.86, "F1": 0.87, "AUC": 0.9319},
+    "Logistic Regression": {"Accuracy": 0.8953, "Precision": 0.92, "Recall": 0.84, "F1": 0.88, "AUC": 0.8953},
 }
 
-# ==========================================
-# 3. SIDEBAR & HEADER
-# ==========================================
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/4712/4712009.png", width=80)
-    st.title("GhostGuard AI")
-    st.markdown("---")
-    st.markdown("**Project:** Ghosting Prediction")
-    st.markdown("**Model:** Voting Ensemble")
-    st.markdown("**Data Source:** 11,500 Interactions")
-    st.markdown("---")
-    st.success("System Status: Online 🟢")
+# --- UTIL: format percent ---
+def pct(x):
+    try:
+        return f"{x:.1%}"
+    except Exception:
+        return str(x)
 
-st.markdown("# 📊 Behavioral Analysis Dashboard")
-st.markdown("### Machine Learning Defense for Dating Apps")
-st.markdown("---")
+# --- MAIN TABS ---
+tabs = st.tabs(["🏆 Overview", "🌲 Random Forest", "🚀 Gradient Boosting", "🔮 Ensemble", "🧪 Simulator", "📁 Data & Downloads"]) 
 
-# ==========================================
-# 4. MAIN TABS
-# ==========================================
-tab1, tab2, tab3 = st.tabs(["🏆 Performance Overview", "🧠 Feature Intelligence", "🧪 Live Simulator"])
+# ------------------ TAB: OVERVIEW ------------------
+with tabs[0]:
+    st.subheader("Model Leaderboard & Key Insights")
 
-# --- TAB 1: PERFORMANCE OVERVIEW ---
-with tab1:
-    # A. Top Metrics Row
-    report = perf_data['classification_report']
-    acc = report.get('accuracy', 0)
-    weighted = report.get('weighted avg', {})
-    
-    # Use HTML columns for custom styling
-    c1, c2, c3, c4 = st.columns(4)
-    
-    def custom_metric(label, value, subtext, col):
-        col.markdown(f"""
-        <div class="dashboard-card" style="text-align: center; padding: 15px;">
-            <div class="metric-label">{label}</div>
-            <div class="metric-value">{value}</div>
-            <div class="metric-delta">{subtext}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    # Leaderboard
+    df_compare = pd.DataFrame.from_dict(all_models_data, orient='index').reset_index()
+    df_compare.columns = ['Model', 'Accuracy', 'Precision', 'Recall', 'F1', 'AUC']
+    df_compare = df_compare.sort_values(by='AUC', ascending=False)
 
-    custom_metric("Accuracy", f"{acc:.1%}", "vs Target 85% ↑", c1)
-    custom_metric("Precision", f"{weighted.get('precision', 0):.1%}", "False Positive Rate ↓", c2)
-    custom_metric("Recall", f"{weighted.get('recall', 0):.1%}", "Detection Rate ↑", c3)
-    custom_metric("AUC Score", f"{all_models_data['Random Forest']:.4f}", "Best Model (RF)", c4)
+    left, right = st.columns([2,1])
 
-    st.write("") # Spacing
+    with left:
+        fig = px.bar(df_compare, x='AUC', y='Model', orientation='h', color='AUC', color_continuous_scale='Purples', text_auto='.4f')
+        fig.update_layout(title='Model Comparison by AUC (Higher is Better)', height=420, margin=dict(l=40,r=20,t=50,b=20))
+        st.plotly_chart(fig, use_container_width=True)
 
-    # B. Main Charts Row (Comparison + Confusion Matrix)
-    col_left, col_right = st.columns([1.5, 1])
-    
-    with col_left:
-        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-        st.markdown("### 🏎️ Algorithm Leaderboard")
-        
-        df_compare = pd.DataFrame(list(all_models_data.items()), columns=['Model', 'AUC'])
-        df_compare = df_compare.sort_values(by='AUC', ascending=True)
-        
-        # Color the best model differently
-        colors = ['#e0e7ff'] * (len(df_compare) - 1) + ['#4c1d95']
-        
-        fig_bar = go.Figure(go.Bar(
-            x=df_compare['AUC'],
-            y=df_compare['Model'],
-            orientation='h',
-            marker_color=colors,
-            text=df_compare['AUC'].apply(lambda x: f"{x:.4f}"),
-            textposition='auto'
-        ))
-        fig_bar.update_layout(
-            plot_bgcolor='white',
-            height=400,
-            margin=dict(l=0, r=0, t=30, b=0),
-            xaxis=dict(range=[0.4, 1.0], title="AUC Score")
-        )
+    with right:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown('<div class="metric-label">Primary Metric</div>', unsafe_allow_html=True)
+        top = df_compare.iloc[0]
+        st.markdown(f'<div class="metric-value">{top.AUC:.4f} AUC</div>', unsafe_allow_html=True)
+        st.markdown('<div class="muted">Top model: <b>{}</b></div>'.format(top.Model), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('---')
+    st.subheader('Accuracy vs Recall (Trade-offs)')
+    fig_scatter = px.scatter(df_compare, x='Recall', y='Accuracy', size='AUC', color='Model', hover_name='Model', size_max=60)
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+# ------------------ TAB: RANDOM FOREST ------------------
+with tabs[1]:
+    st.subheader('🌲 Random Forest — Performance')
+    metrics = all_models_data['Random Forest']
+
+    c1, c2 = st.columns([1,2])
+    with c1:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown('<div class="metric-label">Accuracy</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-value">{pct(metrics["Accuracy"])}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown('<div class="metric-label">AUC</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-value">{metrics["AUC"]:.4f}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with c2:
+        df_metrics = pd.DataFrame({
+            'Metric':['Accuracy','Precision','Recall','F1','AUC'],
+            'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]
+        })
+        fig_bar = px.bar(df_metrics, x='Metric', y='Score', color='Score', color_continuous_scale='Greens', text_auto='.2%')
+        fig_bar.update_layout(yaxis_range=[0,1.05], height=340)
         st.plotly_chart(fig_bar, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    with col_right:
-        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-        st.markdown("### 🎯 Confusion Matrix")
-        
-        cm = np.array(perf_data.get('confusion_matrix', [[0,0],[0,0]]))
-        
-        # Custom Annotated Heatmap
-        fig_cm = px.imshow(
-            cm,
-            text_auto=True,
-            color_continuous_scale=[[0, '#f3f4f6'], [1, '#4c1d95']],
-            labels=dict(x="Predicted", y="Actual", color="Count"),
-            x=['No Ghost', 'Ghosted'],
-            y=['No Ghost', 'Ghosted']
-        )
-        fig_cm.update_layout(
-            height=400,
-            margin=dict(l=0, r=0, t=30, b=0),
-            coloraxis_showscale=False
-        )
-        st.plotly_chart(fig_cm, use_container_width=True)
-        st.caption("Darker purple = Higher volume of correct predictions.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# --- TAB 2: FEATURE INTELLIGENCE ---
-with tab2:
-    st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-    st.subheader("🧠 What Drives Ghosting?")
-    st.write("Analysis of which behavioral factors contribute most to the risk score.")
-    
-    fi_data = perf_data.get('feature_importance', {})
-    if fi_data:
-        fi_df = pd.DataFrame({'Feature': fi_data.keys(), 'Importance': fi_data.values()})
-        fi_df = fi_df.sort_values(by='Importance', ascending=True).tail(12)
-        
-        fig_fi = px.bar(
-            fi_df, x='Importance', y='Feature', orientation='h',
-            color='Importance', color_continuous_scale='Purples'
-        )
-        fig_fi.update_layout(height=600, plot_bgcolor='white')
+    # Feature importance (if available)
+    st.subheader('Top Predictors (Feature Importance)')
+    fi = perf_data.get('feature_importance') if perf_data else None
+    if fi:
+        fi_df = pd.DataFrame({'Feature':list(fi.keys()), 'Importance':list(fi.values())}).sort_values('Importance', ascending=True).tail(12)
+        fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', title='Top Features — Random Forest', text_auto='.2f')
         st.plotly_chart(fig_fi, use_container_width=True)
     else:
-        st.info("Feature Importance data is unavailable.")
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.info('Feature importance not found in `model_performance.json`. Add it to display top predictors.')
 
-# --- TAB 3: LIVE SIMULATOR ---
-with tab3:
-    if model:
-        c1, c2 = st.columns([1, 2])
-        
-        with c1:
-            st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-            st.markdown("### 🎛️ Simulation Inputs")
-            
-            msg_count = st.slider("Messages Sent", 0, 100, 15)
-            st.caption("Higher effort usually correlates with lower risk.")
-            
-            emoji_rate = st.slider("Emoji Usage Rate", 0.0, 1.0, 0.05)
-            st.caption("Emotional expressiveness factor.")
-            
-            # Add inputs for other key features if they exist in your model
-            # e.g., time_gap = st.number_input(...)
-            
-            st.markdown("---")
-            has_history = st.toggle("Has Ghosting History?", value=False)
-            
-            if st.button("⚡ Calculate Risk", type="primary", use_container_width=True):
-                # Run Prediction Logic
+# ------------------ TAB: GRADIENT BOOSTING ------------------
+with tabs[2]:
+    st.subheader('🚀 Gradient Boosting — Performance')
+    metrics = all_models_data['Gradient Boosting']
+    show_cols = st.columns(4)
+    for idx, (label, key) in enumerate([('Accuracy','Accuracy'), ('Precision','Precision'), ('Recall','Recall'), ('AUC','AUC')]):
+        with show_cols[idx]:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-label">{label}</div>', unsafe_allow_html=True)
+            val = metrics[key]
+            if label=='AUC': st.markdown(f'<div class="metric-value">{val:.4f}</div>', unsafe_allow_html=True)
+            else: st.markdown(f'<div class="metric-value">{pct(val)}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # Performance breakdown
+    df_metrics = pd.DataFrame({
+        'Metric':['Accuracy','Precision','Recall','F1','AUC'],
+        'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]
+    })
+    fig = px.line(df_metrics, x='Metric', y='Score', markers=True, title='Metric Trend (GB)')
+    fig.update_yaxes(range=[0,1.05])
+    st.plotly_chart(fig, use_container_width=True)
+
+# ------------------ TAB: ENSEMBLE ------------------
+with tabs[3]:
+    st.subheader('🔮 Voting Ensemble (Final Model) — Evaluation')
+    metrics = all_models_data['Ensemble']
+    show_cols = st.columns(4)
+    for idx, (label, key) in enumerate([('Accuracy','Accuracy'), ('Precision','Precision'), ('Recall','Recall'), ('AUC','AUC')]):
+        with show_cols[idx]:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-label">{label}</div>', unsafe_allow_html=True)
+            val = metrics[key]
+            if label=='AUC': st.markdown(f'<div class="metric-value">{val:.4f}</div>', unsafe_allow_html=True)
+            else: st.markdown(f'<div class="metric-value">{pct(val)}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('---')
+
+    # ROC Curve (if available)
+    st.subheader('ROC Curve')
+    roc = perf_data.get('roc_curve')
+    if roc and 'fpr' in roc and 'tpr' in roc:
+        fpr, tpr = roc['fpr'], roc['tpr']
+        fig_roc = go.Figure()
+        fig_roc.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name='ROC'))
+        fig_roc.add_shape(type='line', x0=0, x1=1, y0=0, y1=1, line=dict(dash='dash'))
+        fig_roc.update_layout(title='Ensemble ROC Curve', xaxis_title='False Positive Rate', yaxis_title='True Positive Rate', height=420)
+        st.plotly_chart(fig_roc, use_container_width=True)
+    else:
+        st.info('ROC data not found in `model_performance.json`. Add `roc_curve` with fpr & tpr arrays to visualize.')
+
+    # Confusion Matrix
+    st.subheader('Confusion Matrix')
+    cm = perf_data.get('confusion_matrix')
+    if cm:
+        cm = np.array(cm)
+        labels_x = ['Pred: No Ghost','Pred: Ghost']
+        labels_y = ['Actual: No Ghost','Actual: Ghost']
+        fig_cm = go.Figure(data=go.Heatmap(z=cm, x=labels_x, y=labels_y, text=cm, texttemplate='%{text}', colorscale='Purples'))
+        fig_cm.update_layout(height=360, margin=dict(l=40,r=20,t=40,b=20))
+        st.plotly_chart(fig_cm, use_container_width=True)
+    else:
+        st.info('Confusion matrix not present in performance file. Add `confusion_matrix` key (2x2 list) to display.')
+
+# ------------------ TAB: SIMULATOR ------------------
+with tabs[4]:
+    st.subheader('🧪 Interactive Risk Simulator')
+
+    sim_left, sim_right = st.columns([1,2])
+    with sim_left:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown('<div class="metric-label">Simulation Inputs</div>', unsafe_allow_html=True)
+        msg_count = st.slider('Messages Sent', 0, 200, 20)
+        emoji_rate = st.slider('Emoji Usage Rate (0-1)', 0.0, 1.0, 0.1, step=0.05)
+        response_time = st.slider('Average Response Time (hrs)', 0.0, 72.0, 12.0)
+        has_history = st.checkbox('Has Ghosting History?', value=False)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with sim_right:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.markdown('<div class="metric-label">Prediction</div>', unsafe_allow_html=True)
+
+        if not model or not model_columns:
+            st.info('Model files not loaded. Use local model files (ghosting_risk_model.pkl, model_columns.pkl) to enable live predictions.')
+            # Provide a simulated probability for demo
+            demo_prob = 0.35 + (msg_count/200)*0.3 + (emoji_rate*0.2) + (0.15 if has_history else 0)
+            demo_prob = min(0.98, demo_prob)
+            fig_gauge = go.Figure(go.Indicator(mode='gauge+number', value=demo_prob*100, title={'text':'Ghosting Probability'}, gauge={'axis':{'range':[0,100]}, 'steps':[{'range':[0,50],'color':'#b7f0c1'},{'range':[50,100],'color':'#ffd6d6'}], 'bar':{'color':'#3b1f6b'}}))
+            st.plotly_chart(fig_gauge, use_container_width=True)
+            if demo_prob > 0.5:
+                st.error('RESULT: High Risk Conversation (Demo)')
+            else:
+                st.success('RESULT: Low Risk Conversation (Demo)')
+        else:
+            if st.button('Run Model'):
+                # Build input vector
                 input_df = pd.DataFrame(columns=model_columns)
                 input_df.loc[0] = 0
-                
+                # safe assignments
                 if 'Message_Sent_Count' in input_df.columns: input_df['Message_Sent_Count'] = msg_count
                 if 'Emoji_Usage_Rate' in input_df.columns: input_df['Emoji_Usage_Rate'] = emoji_rate
+                if 'Avg_Response_Time_Hours' in input_df.columns: input_df['Avg_Response_Time_Hours'] = response_time
                 if 'Has_Ghosting_History' in input_df.columns: input_df['Has_Ghosting_History'] = 1 if has_history else 0
-                
-                try:
-                    prob = model.predict_proba(input_df)[0][1]
-                    st.session_state['prob'] = prob
-                except Exception as e:
-                    st.error(f"Error: {e}")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
 
-        with c2:
-            st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
-            st.markdown("### 🔮 AI Prediction")
-            
-            prob = st.session_state.get('prob', 0.5)
-            
-            # Gauge Chart
-            fig_gauge = go.Figure(go.Indicator(
-                mode = "gauge+number+delta",
-                value = prob * 100,
-                title = {'text': "Ghosting Risk Probability"},
-                gauge = {
-                    'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
-                    'bar': {'color': "#4c1d95"},
-                    'bgcolor': "white",
-                    'borderwidth': 2,
-                    'bordercolor': "gray",
-                    'steps': [
-                        {'range': [0, 50], 'color': "#dcfce7"}, # Green
-                        {'range': [50, 100], 'color': "#fee2e2"}], # Red
-                }
-            ))
-            fig_gauge.update_layout(height=400)
-            st.plotly_chart(fig_gauge, use_container_width=True)
-            
-            if prob > 0.5:
-                st.error(f"⚠️ **High Risk ({prob:.1%})**: This user shows behavioral patterns strongly correlated with ghosting.")
-            else:
-                st.success(f"✅ **Low Risk ({prob:.1%})**: This interaction appears healthy and stable.")
-                
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-    else:
-        st.warning("⏳ Model is loading from Google Drive... please wait a moment.")
+                try:
+                    if scaler is not None:
+                        X = scaler.transform(input_df)
+                    else:
+                        X = input_df.values
+                    prob = model.predict_proba(X)[0][1]
+
+                    fig_gauge = go.Figure(go.Indicator(mode='gauge+number', value=prob*100, title={'text':'Ghosting Probability'}, gauge={'axis':{'range':[0,100]}, 'steps':[{'range':[0,50],'color':'#b7f0c1'},{'range':[50,100],'color':'#ffd6d6'}], 'bar':{'color':'#3b1f6b'}}))
+                    st.plotly_chart(fig_gauge, use_container_width=True)
+
+                    if prob > 0.5:
+                        st.error('RESULT: High Risk Conversation')
+                    else:
+                        st.success('RESULT: Low Risk Conversation')
+                except Exception as e:
+                    st.error(f'Prediction Error: {e}')
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ------------------ TAB: DATA & DOWNLOADS ------------------
+with tabs[5]:
+    st.subheader('📁 Data, Model Files & Downloads')
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown('**Available files (local)**')
+        files = [f for f in os.listdir('.') if f.endswith(('.csv', '.json', '.pkl'))]
+        for f in files:
+            st.write(f)
+            try:
+                st.download_button(label=f'Download {f}', data=open(f,'rb'), file_name=f)
+            except Exception:
+                pass
+
+    with col2:
+        st.markdown('**Upload your model_performance.json**')
+        uploaded = st.file_uploader('Upload JSON', type=['json'])
+        if uploaded:
+            try:
+                data = json.load(uploaded)
+                with open('model_performance.json', 'w') as out:
+                    json.dump(data, out)
+                st.success('Saved model_performance.json — reload the app to use it')
+            except Exception as e:
+                st.error(f'Invalid JSON: {e}')
+
+# ------------------ FOOTER ------------------
+st.markdown('<div style="padding:12px 0; opacity:0.7; font-size:0.9rem">Made with ❤️ — Ghosting Research Dashboard. Need layout tweaks? Tell me exactly what to change.</div>', unsafe_allow_html=True)
