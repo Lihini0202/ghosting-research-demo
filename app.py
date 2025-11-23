@@ -181,6 +181,7 @@ with tabs[2]:
     fig_line.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20), yaxis_range=[0,1.05])
     st.plotly_chart(fig_line, use_container_width=True)
 
+
 # ------------------ TAB: ENSEMBLE ------------------
 with tabs[3]:
     st.subheader('🔮 Ensemble Model — Evaluation')
@@ -195,22 +196,43 @@ with tabs[3]:
             st.markdown(f'<div class="metric-value">{display_val}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-    st.subheader('ROC Curve')
-    roc = perf_data.get('roc_curve')
-    if roc and 'fpr' in roc and 'tpr' in roc:
-        fpr, tpr = roc['fpr'], roc['tpr']
-        fig_roc = go.Figure()
-        fig_roc.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name='ROC', line=dict(width=2)))
-        fig_roc.add_trace(go.Scatter(x=[0,1], y=[0,1], mode='lines', line=dict(dash='dash')))
-        fig_roc.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20))
-        st.plotly_chart(fig_roc, use_container_width=True)
+    st.markdown('---')
 
-    st.subheader('Confusion Matrix')
-    cm = perf_data.get('confusion_matrix')
-    if cm:
-        cm_fig = go.Figure(go.Heatmap(z=np.array(cm), x=["Pred No Ghost","Pred Ghost"], y=["Actual No Ghost","Actual Ghost"], colorscale=[[0,'#f3eaff'],[1,'#6a00ff']], text=np.array(cm), texttemplate="%{text}"))
-        cm_fig.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20))
-        st.plotly_chart(cm_fig, use_container_width=True)
+    # Two-column visualization for ROC and Confusion Matrix
+    col_roc, col_cm = st.columns(2)
+
+    # ROC Curve
+    with col_roc:
+        st.subheader('ROC Curve')
+        roc = perf_data.get('roc_curve')
+        if roc and 'fpr' in roc and 'tpr' in roc:
+            fpr, tpr = roc['fpr'], roc['tpr']
+            fig_roc = go.Figure()
+            fig_roc.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name='ROC', line=dict(width=2)))
+            fig_roc.add_trace(go.Scatter(x=[0,1], y=[0,1], mode='lines', line=dict(dash='dash')))
+            fig_roc.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20))
+            st.plotly_chart(fig_roc, use_container_width=True)
+        else:
+            st.info('ROC data not available.')
+
+    # Confusion Matrix
+    with col_cm:
+        st.subheader('Confusion Matrix')
+        cm = perf_data.get('confusion_matrix')
+        if cm:
+            cm_fig = go.Figure(go.Heatmap(
+                z=np.array(cm),
+                x=["Pred No Ghost","Pred Ghost"],
+                y=["Actual No Ghost","Actual Ghost"],
+                colorscale=[[0,'#f3eaff'],[1,'#6a00ff']],
+                text=np.array(cm),
+                texttemplate="%{text}"
+            ))
+            cm_fig.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20))
+            st.plotly_chart(cm_fig, use_container_width=True)
+        else:
+            st.info('Confusion matrix not available.')
+
 
 # ------------------ TAB: SIMULATOR ------------------
 with tabs[4]:
