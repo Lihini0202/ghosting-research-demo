@@ -64,6 +64,7 @@ Auto-Download: When the app launches, it automatically downloads the model from 
 
 # 💻 Streamlit Live Demo Link
 [https://vtuwnzyqpnvq4m86hdm3oa.streamlit.app/](https://vtuwnzyqpnvq4m86hdm3oa.streamlit.app/)
+If it didn't work, please copy and paste the link into the browser or reload the page.
 
 # 📂 File Structure
 app.py - The main Streamlit application code.
