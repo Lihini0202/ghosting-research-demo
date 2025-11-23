@@ -101,28 +101,44 @@ tabs = st.tabs(["🏆 Overview","🌲 Random Forest","🚀 Gradient Boosting","�
 # ------------------ TAB: OVERVIEW ------------------
 with tabs[0]:
     st.subheader("Model Leaderboard & Key Insights")
+
+    # Leaderboard
     df_compare = pd.DataFrame.from_dict(all_models_data, orient='index').reset_index()
-    df_compare.columns = ['Model','Accuracy','Precision','Recall','F1','AUC']
+    df_compare.columns = ['Model', 'Accuracy', 'Precision', 'Recall', 'F1', 'AUC']
     df_compare = df_compare.sort_values(by='AUC', ascending=False)
 
     left, right = st.columns([2,1])
+
     with left:
-        fig = px.bar(df_compare, x='AUC', y='Model', orientation='h', color='AUC', color_continuous_scale='plasma', text_auto='.4f')
-        fig.update_layout(title='Model Comparison by AUC', height=300, margin=dict(l=30,r=20,t=40,b=20))
+        fig = px.bar(df_compare, x='AUC', y='Model', orientation='h', color='AUC', color_continuous_scale='Purples', text_auto='.4f')
+        fig.update_layout(title='Model Comparison by AUC (Higher is Better)', height=300, margin=dict(l=40,r=20,t=50,b=20))
         st.plotly_chart(fig, use_container_width=True)
+
     with right:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.markdown('<div class="metric-label">Primary Metric</div>', unsafe_allow_html=True)
         top = df_compare.iloc[0]
         st.markdown(f'<div class="metric-value">{top.AUC:.4f} AUC</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="muted">Top model: <b>{top.Model}</b></div>', unsafe_allow_html=True)
+        st.markdown('<div class="muted">Top model: <b>{}</b></div>'.format(top.Model), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('---')
     st.subheader('Accuracy vs Recall (Trade-offs)')
-    fig_scatter = px.scatter(df_compare, x='Recall', y='Accuracy', size='AUC', color='Model', hover_name='Model', size_max=50)
-    fig_scatter.update_layout(height=300, margin=dict(l=30,r=20,t=40,b=20))
+
+    # Scatter plot with smaller markers
+    fig_scatter = px.scatter(
+        df_compare,
+        x='Recall',
+        y='Accuracy',
+        size_max=15,  # maximum size of dots
+        size=[10]*len(df_compare),  # uniform smaller size
+        color='Model',
+        hover_name='Model'
+    )
+    fig_scatter.update_traces(marker=dict(size=10))  # enforce smaller dot size
+    fig_scatter.update_layout(height=300, margin=dict(l=40,r=20,t=40,b=20))  # compact height
     st.plotly_chart(fig_scatter, use_container_width=True)
+
 
 # ------------------ TAB: RANDOM FOREST ------------------
 with tabs[1]:
