@@ -165,8 +165,10 @@ with tabs[1]:
 with tabs[2]:
     st.subheader('🚀 Gradient Boosting — Performance')
     metrics = all_models_data['Gradient Boosting']
+
+    # Display main metrics in small cards
     show_cols = st.columns(4)
-    for idx, (label,key) in enumerate([('Accuracy','Accuracy'),('Precision','Precision'),('Recall','Recall'),('AUC','AUC')]):
+    for idx, (label, key) in enumerate([('Accuracy','Accuracy'),('Precision','Precision'),('Recall','Recall'),('AUC','AUC')]):
         with show_cols[idx]:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-label">{label}</div>', unsafe_allow_html=True)
@@ -175,11 +177,32 @@ with tabs[2]:
             st.markdown(f'<div class="metric-value">{display_val}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-    df_metrics = pd.DataFrame({'Metric':['Accuracy','Precision','Recall','F1','AUC'],
-                               'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]})
-    fig_line = px.line(df_metrics, x='Metric', y='Score', markers=True)
-    fig_line.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20), yaxis_range=[0,1.05])
-    st.plotly_chart(fig_line, use_container_width=True)
+    st.markdown('---')
+
+    # Two-column visualizations: Metrics Histogram & Feature Importance
+    col_metrics, col_fi = st.columns(2)
+
+    # Metrics Histogram
+    with col_metrics:
+        df_metrics = pd.DataFrame({
+            'Metric':['Accuracy','Precision','Recall','F1','AUC'],
+            'Score':[metrics['Accuracy'], metrics['Precision'], metrics['Recall'], metrics['F1'], metrics['AUC']]
+        })
+        fig_hist = px.bar(df_metrics, x='Metric', y='Score', color='Score', color_continuous_scale='Blues', text_auto='.2%')
+        fig_hist.update_layout(height=300, yaxis_range=[0,1.05], margin=dict(l=30,r=20,t=30,b=20))
+        st.plotly_chart(fig_hist, use_container_width=True)
+
+    # Feature Importance (if available)
+    with col_fi:
+        fi = perf_data.get('feature_importance')
+        if fi:
+            fi_df = pd.DataFrame({'Feature':list(fi.keys()), 'Importance':list(fi.values())}).sort_values('Importance', ascending=True).tail(12)
+            fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', title='Top Features — Gradient Boosting', text_auto='.2f')
+            fig_fi.update_layout(height=300, margin=dict(l=30,r=20,t=30,b=20))
+            st.plotly_chart(fig_fi, use_container_width=True)
+        else:
+            st.info('Feature importance not found in `model_performance.json`.')
+
 
 
 # ------------------ TAB: ENSEMBLE ------------------
