@@ -344,3 +344,40 @@ with tabs[5]:
 
 # ------------------ FOOTER ------------------
 st.markdown('<div style="padding:12px 0; opacity:0.7; font-size:0.9rem">Made with ❤️ — Ghosting Research Dashboard. Need layout tweaks? Tell me exactly what to change.</div>', unsafe_allow_html=True)
+
+# --- IMPROVED VISUALIZATION THEME (Modern Clean Plots) ---
+# Helper to modernize all Plotly figures
+def modern_plot_fig(fig):
+    fig.update_layout(
+        template="plotly_white",
+        font=dict(family="Poppins", size=14),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=40, r=40, t=50, b=40),
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="#ececf5")
+    fig.update_yaxes(showgrid=True, gridcolor="#ececf5")
+    return fig
+
+# Improved Confusion Matrix Appearance
+if 'confusion_matrix' in perf_data:
+    st.subheader("Confusion Matrix (Enhanced)")
+    cm = np.array(perf_data['confusion_matrix'])
+    cm_fig = go.Figure(data=go.Heatmap(
+        z=cm,
+        text=cm,
+        texttemplate="%{text}",
+        x=["Predicted No Ghost", "Predicted Ghost"],
+        y=["Actual No Ghost", "Actual Ghost"],
+        colorscale=[[0, '#f3eaff'], [1, '#6a00ff']]
+    ))
+    st.plotly_chart(modern_plot_fig(cm_fig), use_container_width=True)
+
+# Improved ROC Curve
+if 'fpr' in perf_data and 'tpr' in perf_data:
+    st.subheader("ROC Curve (Enhanced)")
+    roc_fig = go.Figure()
+    roc_fig.add_trace(go.Scatter(x=perf_data['fpr'], y=perf_data['tpr'], mode='lines', name='ROC', line=dict(width=3)))
+    roc_fig.add_trace(go.Scatter(x=[0,1], y=[0,1], mode='lines', name='Baseline', line=dict(dash='dash')))
+    st.plotly_chart(modern_plot_fig(roc_fig), use_container_width=True)
+
