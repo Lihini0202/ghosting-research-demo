@@ -44,7 +44,7 @@ To run this dashboard on your local machine:
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/your-username/ghosting-research-dashboard.git](https://github.com/your-username/ghosting-research-dashboard.git)
+git clone "https://github.com/Lihini0202/ghosting-research-demo.git"
 cd ghosting-research-dashboard
 ```
 Here is a professional README.md file tailored specifically for your Streamlit Research Dashboard.
